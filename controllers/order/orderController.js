@@ -2,10 +2,9 @@ import Order from "../../models/Order.js";
 import Cart from "../../models/Cart.js";
 import Customer from "../../models/Customer.js";
 import Agent from "../../models/Agent.js";
-import {
-  validTransitions
-}
-  from "../../utils/orderStatusFlow.js";
+import { validTransitions } from "../../utils/orderStatusFlow.js";
+
+import { emitOrderStatusUpdate } from "../../socket/orderEvents.js";
 
 export const placeOrder = async (
   req,
@@ -63,12 +62,12 @@ export const placeOrder = async (
     }
 
     if (
-      cart.totalAmount < 250
+      cart.totalAmount < 350
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "Minimum order value is ₹250"
+          "Minimum order value is ₹350"
       });
     }
 
@@ -195,7 +194,16 @@ export const getOrderById = async (
     const order =
       await Order.findById(
         req.params.id
-      );
+      )
+
+        .populate(
+          "customer",
+          "name phone"
+        )
+        .populate(
+          "agent",
+          "name phone vehicleNumber"
+        );
 
     if (!order) {
       return res.status(404).json({
@@ -205,7 +213,7 @@ export const getOrderById = async (
     }
 
     if (
-      order.customer.toString() !==
+      order.customer._id.toString() !==
       req.customer.customerId
     ) {
       return res.status(403).json({
@@ -281,6 +289,11 @@ export const cancelOrder = async (
 
     await order.save();
 
+    order.statusHistory.push({
+      status: "Cancelled"
+    });
+
+
     res.status(200).json({
       success: true,
       message:
@@ -310,7 +323,11 @@ export const getAllOrders = async (
       await Order.find()
         .populate(
           "customer",
-          "phone"
+          "name phone"
+        )
+        .populate(
+          "agent",
+          "name phone"
         )
         .sort({
           createdAt: -1
@@ -344,7 +361,11 @@ export const adminGetOrderById =
         )
           .populate(
             "customer",
-            "phone"
+            "name phone"
+          )
+          .populate(
+            "agent",
+            "name phone vehicleNumber"
           );
 
       if (!order) {
@@ -416,6 +437,7 @@ export const updateOrderStatus =
       });
 
       await order.save();
+      emitOrderStatusUpdate(order);
 
       res.status(200).json({
         success: true,
@@ -449,7 +471,11 @@ export const assignAgent = async (
     const order =
       await Order.findById(
         req.params.id
-      );
+      )
+        .populate(
+          "agent",
+          "name phone vehicleNumber"
+        );
 
     if (!order) {
       return res.status(404).json({
@@ -478,10 +504,14 @@ export const assignAgent = async (
       });
     }
 
-    order.agent = agent._id;
+    order.agent = agentId;
 
     order.orderStatus =
       "Agent Assigned";
+
+    order.statusHistory.push({
+      status: "Agent Assigned"
+    });
 
     agent.isAvailable =
       false;
@@ -508,3 +538,188 @@ export const assignAgent = async (
 
 };
 
+export const getLiveLocation =
+  async (req, res) => {
+
+    try {
+
+      const order =
+        await Order.findById(
+          req.params.id
+        ).populate(
+          "agent",
+          "name phone vehicleNumber"
+        );
+
+      if (!order) {
+
+        return res.status(404).json({
+          success: false
+        });
+
+      }
+
+      if (!order.agent) {
+
+        return res.status(200).json({
+          success: true,
+          location: null
+        });
+
+      }
+
+      res.status(200).json({
+
+        success: true,
+
+        latitude:
+          order.agent.currentLatitude,
+
+        longitude:
+          order.agent.currentLongitude,
+
+        agent: {
+          id: order.agent._id,
+          name: order.agent.name,
+          phone: order.agent.phone
+        },
+
+        status:
+          order.orderStatus
+
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+
+    }
+
+  };
+
+  export const reorderOrder =
+async (req,res) => {
+
+  try {
+
+    const customerId =
+      req.customer.customerId;
+
+    const order =
+      await Order.findById(
+        req.params.orderId
+      );
+
+    if(!order){
+
+      return res.status(404).json({
+        success:false,
+        message:"Order not found"
+      });
+
+    }
+
+    let cart =
+      await Cart.findOne({
+        customer: customerId
+      });
+
+    if(!cart){
+
+      cart =
+        await Cart.create({
+          customer: customerId,
+          items: [],
+          totalAmount: 0
+        });
+
+    }
+
+    for(
+      const item of order.items
+    ){
+
+      const existingItem =
+        cart.items.find(
+          cartItem =>
+
+            cartItem.product.toString()
+            ===
+            item.product.toString()
+
+            &&
+
+            cartItem.variantName
+            ===
+            item.variantName
+        );
+
+      if(existingItem){
+
+        existingItem.quantity +=
+          item.quantity;
+
+      } else {
+
+        cart.items.push({
+
+          product:
+            item.product,
+
+          variantName:
+            item.variantName,
+
+          variantPrice:
+            item.variantPrice,
+
+          quantity:
+            item.quantity
+
+        });
+
+      }
+
+    }
+
+    cart.totalAmount =
+      cart.items.reduce(
+
+        (total,item)=>
+
+          total +
+          (
+            item.variantPrice *
+            item.quantity
+          ),
+
+        0
+
+      );
+
+    await cart.save();
+
+    res.status(200).json({
+
+      success:true,
+
+      message:
+      "Items added to cart"
+
+    });
+
+  } catch(error){
+
+    res.status(500).json({
+
+      success:false,
+
+      message:error.message
+
+    });
+
+  }
+
+};

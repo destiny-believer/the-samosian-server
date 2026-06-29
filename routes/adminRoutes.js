@@ -1,7 +1,8 @@
 import express from "express";
 
 import {
-    adminLogin
+    adminLogin,
+    getDashboardStats
 } from "../controllers/admin/adminController.js";
 import adminMiddleware from "../middleware/adminMiddleware.js";
 
@@ -26,5 +27,19 @@ router.get(
 
   }
 );
+
+router.get(
+  "/dashboard",
+  adminMiddleware,
+  getDashboardStats
+);
+
+router.get(
+  "/dashboard-stats",
+  adminMiddleware,
+  getDashboardStats
+)
+
+
 
 export default router;

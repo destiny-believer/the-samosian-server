@@ -1,5 +1,6 @@
 import Product from "../../models/Product.js";
 import Category from "../../models/Category.js";
+import Customer from "../../models/Customer.js";
 
 
 // Create Product
@@ -74,8 +75,6 @@ export const createProduct = async (
 
 };
 
-
-
 // Get All Products
 
 export const getProducts = async (
@@ -86,7 +85,7 @@ export const getProducts = async (
     try {
 
         const products =
-            await Product.findOne()
+            await Product.find()
                 .populate(
                     "category",
                     "name"
@@ -115,13 +114,8 @@ export const getProductById =
 
         try {
 
-            const product =
-                await Product.findById(
-                    req.params.id
-                ).populate(
-                    "category",
-                    "name"
-                );
+            const product = await Product.findById(req.params.id)
+                .populate("category", "name")
 
             if (!product) {
                 return res.status(404).json({
@@ -145,7 +139,7 @@ export const getProductById =
         }
 
     };
-    
+
 export const updateProduct =
     async (req, res) => {
 
@@ -257,3 +251,215 @@ export const toggleAvailability =
         }
 
     };
+
+export const addReview =
+    async (req, res) => {
+
+        try {
+
+            const customerId =
+                req.customer.customerId;
+
+            const {
+                rating,
+                comment
+            } = req.body;
+
+            const product =
+                await Product.findById(
+                    req.params.productId
+                );
+
+            if (!product) {
+
+                return res.status(404).json({
+                    success: false,
+                    message: "Product not found"
+                });
+
+            }
+
+            const customer =
+                await Customer.findById(
+                    customerId
+                );
+
+            const alreadyReviewed =
+                product.reviews.find(
+
+                    review =>
+
+                        review.customer.toString()
+                        ===
+                        customerId
+
+                );
+
+            if (alreadyReviewed) {
+
+                alreadyReviewed.rating = rating;
+
+                alreadyReviewed.comment = comment;
+
+                alreadyReviewed.updatedAt = new Date();
+
+            }
+
+            else {
+
+                product.reviews.push({
+
+                    customer: customerId,
+
+                    customerName: customer.name,
+
+                    rating,
+
+                    comment
+
+                });
+
+            }
+
+            product.reviews.push({
+
+                customer: customerId,
+
+                customerName: customer.name,
+
+                rating,
+
+                comment
+
+            });
+
+            const totalRating = product.reviews.reduce(
+
+                (sum, review) =>
+
+                    sum + review.rating,
+
+                0
+
+            );
+            product.totalRatings = product.reviews.length;
+
+            product.rating = totalRating / product.totalRatings;
+
+            await product.save();
+
+            res.status(201).json({
+
+                success: true,
+
+                message:
+                    "Review submitted"
+
+            });
+
+        } catch (error) {
+
+            res.status(500).json({
+
+                success: false,
+
+                message: error.message
+
+            });
+
+        }
+
+    };
+
+export const getMyReview = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const customerId =
+            req.customer.customerId;
+
+        const {
+            productId
+        } = req.params;
+
+        const product =
+            await Product.findById(
+                productId
+            );
+
+        if (!product) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Product not found"
+
+            });
+
+        }
+
+        const review = product.reviews.find(
+
+            review =>
+
+                review.customer &&
+
+                review.customer.toString() === customerId
+
+        );
+
+        if (!review) {
+
+            res.status(200).json({
+
+                success: true,
+
+                reviewed: true,
+
+                review: {
+
+                    rating: review.rating,
+
+                    comment: review.comment,
+
+                    customerName: review.customerName,
+
+                    createdAt: review.createdAt,
+
+                    updatedAt: review.updatedAt
+
+                }
+
+            });
+
+        }
+
+        res.status(200).json({
+
+            success: true,
+
+            reviewed: true,
+
+            review
+
+        });
+
+    }
+
+    catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};

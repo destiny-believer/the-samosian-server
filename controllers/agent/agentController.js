@@ -2,6 +2,12 @@ import Agent from "../../models/Agent.js";
 import agentOtpStore from "../../utils/agentOtpStore.js";
 import jwt from "jsonwebtoken";
 import Order from "../../models/Order.js";
+import {
+    getIO
+}
+    from "../../socket/socketInstance.js";
+
+import { emitOrderStatusUpdate } from "../../socket/orderEvents.js";
 
 export const registerAgent = async (
     req,
@@ -14,7 +20,10 @@ export const registerAgent = async (
             name,
             phone,
             email,
-            vehicleNumber
+            vehicleNumber,
+            vehicleType,
+            licenseNumber,
+            agentPhoto
         } = req.body;
 
         const existingAgent =
@@ -35,16 +44,28 @@ export const registerAgent = async (
 
         const agent =
             await Agent.create({
+
                 name,
                 phone,
                 email,
-                vehicleNumber
+
+                vehicleNumber,
+
+                vehicleType,
+
+                licenseNumber,
+
+                agentPhoto,
+
+                approvalStatus:
+                    "Pending"
+
             });
 
         res.status(201).json({
             success: true,
             message:
-                "Agent registered successfully",
+                "Registration submitted. Awaiting admin approval",
             agent
         });
 
@@ -140,12 +161,15 @@ export const verifyAgentOtp =
                 });
             }
 
-            if (!agent.isApproved) {
+            if (
+                agent.approvalStatus !==
+                "Approved"
+            ) {
 
                 return res.status(403).json({
                     success: false,
                     message:
-                        "Waiting for admin approval"
+                        "Your account is awaiting admin approval"
                 });
 
             }
@@ -194,7 +218,9 @@ export const getAllAgents = async (
     try {
 
         const agents =
-            await Agent.find()
+            await Agent.find({
+                approvalStatus: "Approved"
+            })
                 .sort({
                     createdAt: -1
                 });
@@ -227,13 +253,22 @@ export const approveAgent =
                 );
 
             if (!agent) {
+
                 return res.status(404).json({
                     success: false,
                     message: "Agent not found"
                 });
+
             }
 
-            agent.isApproved = true;
+            agent.approvalStatus =
+                "Approved";
+
+            agent.approvedAt =
+                new Date();
+
+            agent.rejectionReason =
+                "";
 
             await agent.save();
 
@@ -261,21 +296,59 @@ export const rejectAgent =
         try {
 
             const agent =
-                await Agent.findByIdAndDelete(
+                await Agent.findById(
                     req.params.id
                 );
 
             if (!agent) {
+
                 return res.status(404).json({
                     success: false,
                     message: "Agent not found"
                 });
+
             }
+
+            agent.approvalStatus =
+                "Rejected";
+
+            agent.rejectionReason =
+                req.body.reason ||
+                "Verification failed";
+
+            await agent.save();
 
             res.status(200).json({
                 success: true,
                 message:
                     "Agent rejected successfully"
+            });
+
+        } catch (error) {
+
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+
+        }
+
+    };
+
+export const getPendingAgents =
+    async (req, res) => {
+
+        try {
+
+            const agents =
+                await Agent.find({
+                    approvalStatus:
+                        "Pending"
+                });
+
+            res.status(200).json({
+                success: true,
+                agents
             });
 
         } catch (error) {
@@ -296,14 +369,68 @@ export const getAssignedOrders =
 
             const orders =
                 await Order.find({
-                    agent:
-                        req.agent.agentId
-                });
+                    agent: req.agent.agentId
+                })
+                    .sort({
+                        createdAt: -1
+                    });
 
             res.status(200).json({
                 success: true,
                 count: orders.length,
                 orders
+            });
+
+        } catch (error) {
+
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+
+        }
+
+    };
+
+export const getAssignedOrderById =
+    async (req, res) => {
+
+        try {
+
+            const order =
+                await Order.findById(
+                    req.params.id
+                )
+                    .populate(
+                        "customer",
+                        "name phone"
+                    )
+
+            if (!order) {
+
+                return res.status(404).json({
+                    success: false,
+                    message: "Order not found"
+                });
+
+            }
+
+            if (
+                order.agent?.toString() !==
+                req.agent.agentId
+            ) {
+
+                return res.status(403).json({
+                    success: false,
+                    message:
+                        "Unauthorized"
+                });
+
+            }
+
+            res.status(200).json({
+                success: true,
+                order
             });
 
         } catch (error) {
@@ -367,6 +494,7 @@ export const pickupOrder = async (
         });
 
         await order.save();
+        emitOrderStatusUpdate(order);
 
         res.status(200).json({
             success: true,
@@ -433,6 +561,7 @@ export const startDelivery =
             });
 
             await order.save();
+            emitOrderStatusUpdate(order);
 
             res.status(200).json({
                 success: true,
@@ -499,6 +628,7 @@ export const deliverOrder =
             });
 
             await order.save();
+            emitOrderStatusUpdate(order);
 
             const agent =
                 await Agent.findById(
@@ -535,6 +665,7 @@ export const updateLocation =
     async (req, res) => {
 
         console.log(req.body);
+        console.log("UPDATE LOCATION HIT")
 
         try {
 
@@ -542,6 +673,12 @@ export const updateLocation =
                 latitude,
                 longitude
             } = req.body || {};
+
+            console.log(
+                "Location Updated",
+                latitude,
+                longitude
+            )
 
             if (
                 latitude === undefined ||
@@ -559,6 +696,11 @@ export const updateLocation =
                     req.agent.agentId
                 );
 
+            console.log(
+                "Agent Found:",
+                agent?._id
+            );
+
             if (!agent) {
                 return res.status(404).json({
                     success: false,
@@ -574,6 +716,62 @@ export const updateLocation =
 
             await agent.save();
 
+            const io =
+                getIO();
+
+            const order =
+                await Order.findOne({
+                    agent: agent._id,
+                    orderStatus: "On The Way"
+                });
+
+            console.log(
+                "Order Found:",
+                order?._id
+            )
+
+            console.log(
+                "order status: ", order?.orderStatus
+            )
+
+            if (order) {
+
+                console.log(
+                    "Broadcasting Location",
+                    {
+                        orderId: order._id,
+                        latitude:
+                            agent.currentLatitude,
+                        longitude:
+                            agent.currentLongitude
+                    }
+                );
+
+                console.log(
+                    "Broadcasting Event"
+                );
+
+                io.to(
+                    `order_${order._id}`
+                ).emit(
+                    "agent-location-updated",
+                    {
+                        orderId:
+                            order._id,
+
+                        latitude:
+                            agent.currentLatitude,
+
+                        longitude:
+                            agent.currentLongitude,
+
+                        agentId:
+                            agent._id
+                    }
+                );
+
+            }
+
             res.status(200).json({
                 success: true,
                 message:
@@ -581,6 +779,8 @@ export const updateLocation =
             });
 
         } catch (error) {
+
+            console.log("updated location error: ", error)
 
             res.status(500).json({
                 success: false,

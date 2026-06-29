@@ -8,7 +8,9 @@ import {
     getAllOrders,
     adminGetOrderById,
     updateOrderStatus,
-    assignAgent
+    assignAgent,
+    getLiveLocation,
+    reorderOrder
 }
     from "../controllers/order/orderController.js";
 
@@ -66,6 +68,18 @@ router.patch(
   "/admin/assign/:id",
   adminMiddleware,
   assignAgent
+);
+
+router.get(
+  "/live-location/:id",
+  customerMiddleware,
+  getLiveLocation
+);
+
+router.post(
+  "/reorder/:orderId",
+  customerMiddleware,
+  reorderOrder
 );
 
 export default router;

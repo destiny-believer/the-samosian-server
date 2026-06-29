@@ -12,10 +12,10 @@ export const sendOtp = async (
 
     const { phone } = req.body;
 
-    if(!phone){
+    if (!phone) {
       return res.status(400).json({
-        success:false,
-        message:"Phone number required"
+        success: false,
+        message: "Phone number required"
       });
     }
 
@@ -27,16 +27,16 @@ export const sendOtp = async (
     );
 
     res.status(200).json({
-      success:true,
-      message:"OTP Sent",
+      success: true,
+      message: "OTP Sent",
       otp
     });
 
-  } catch(error){
+  } catch (error) {
 
     res.status(500).json({
-      success:false,
-      message:error.message
+      success: false,
+      message: error.message
     });
 
   }
@@ -58,10 +58,10 @@ export const verifyOtp = async (
     const storedOtp =
       otpStore.get(phone);
 
-    if(storedOtp !== otp){
+    if (storedOtp !== otp) {
       return res.status(400).json({
-        success:false,
-        message:"Invalid OTP"
+        success: false,
+        message: "Invalid OTP"
       });
     }
 
@@ -70,12 +70,12 @@ export const verifyOtp = async (
         phone
       });
 
-    if(!customer){
+    if (!customer) {
 
       customer =
         await Customer.create({
           phone,
-          isVerified:true
+          isVerified: true
         });
 
     } else {
@@ -90,29 +90,29 @@ export const verifyOtp = async (
       jwt.sign(
         {
           customerId:
-          customer._id
+            customer._id
         },
         process.env.JWT_SECRET,
         {
-          expiresIn:"30d"
+          expiresIn: "30d"
         }
       );
 
     otpStore.delete(phone);
 
     res.status(200).json({
-      success:true,
+      success: true,
       message:
-      "Login Successful",
+        "Login Successful",
       token,
       customer
     });
 
-  } catch(error){
+  } catch (error) {
 
     res.status(500).json({
-      success:false,
-      message:error.message
+      success: false,
+      message: error.message
     });
 
   }
@@ -120,7 +120,92 @@ export const verifyOtp = async (
 };
 
 export const addAddress =
-async (req,res) => {
+  async (req, res) => {
+
+    try {
+
+      const customer =
+        await Customer.findById(
+          req.customer.customerId
+        );
+
+      if (!customer) {
+        return res.status(404).json({
+          success: false,
+          message: "Customer not found"
+        });
+      }
+
+      const {
+        houseNo,
+        street,
+        landmark,
+        city,
+        pincode,
+        latitude,
+        longitude,
+        label,
+        isDefault
+      } = req.body;
+
+      const shopLatitude =
+        17.314251;
+
+      const shopLongitude =
+        78.444970;
+
+      const distance =
+        calculateDistance(
+          shopLatitude,
+          shopLongitude,
+          latitude,
+          longitude
+        );
+
+      if (distance > 3) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            "Delivery not available beyond 3 KM"
+        });
+
+      }
+
+      customer.addresses.push({
+        houseNo,
+        street,
+        landmark,
+        city,
+        pincode,
+        latitude,
+        longitude
+      });
+
+      await customer.save();
+
+      res.status(201).json({
+        success: true,
+        message:
+          "Address added successfully",
+        distance
+      });
+
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+
+    }
+
+  };
+
+export const getAddresses = async (
+  req,
+  res
+) => {
 
   try {
 
@@ -129,73 +214,373 @@ async (req,res) => {
         req.customer.customerId
       );
 
-    if(!customer){
-      return res.status(404).json({
-        success:false,
-        message:"Customer not found"
-      });
-    }
-
-    const {
-      houseNo,
-      street,
-      landmark,
-      city,
-      pincode,
-      latitude,
-      longitude
-    } = req.body;
-
-    const shopLatitude =
-      17.314355;
-
-    const shopLongitude =
-      78.445004;
-
-    const distance =
-      calculateDistance(
-        shopLatitude,
-        shopLongitude,
-        latitude,
-        longitude
-      );
-
-    if(distance > 3){
-
-      return res.status(400).json({
-        success:false,
-        message:
-        "Delivery not available beyond 3 KM"
-      });
-
-    }
-
-    customer.addresses.push({
-      houseNo,
-      street,
-      landmark,
-      city,
-      pincode,
-      latitude,
-      longitude
+    res.status(200).json({
+      success: true,
+      addresses:
+        customer.addresses
     });
 
-    await customer.save();
-
-    res.status(201).json({
-      success:true,
-      message:
-      "Address added successfully",
-      distance
-    });
-
-  } catch(error){
+  } catch (error) {
 
     res.status(500).json({
-      success:false,
-      message:error.message
+      success: false,
+      message: error.message
     });
 
   }
+
+};
+
+export const updateAddress = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const customer =
+      await Customer.findById(
+        req.customer.customerId
+      );
+
+    const address =
+      customer.addresses.id(
+        req.params.id
+      );
+
+    if (!address) {
+
+      return res.status(404).json({
+        success: false,
+        message:
+          "Address not found"
+      });
+
+    }
+
+    Object.assign(
+      address,
+      req.body
+    );
+
+    await customer.save();
+
+    res.status(200).json({
+      success: true,
+      address
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
+};
+
+export const deleteAddress = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const customer =
+      await Customer.findById(
+        req.customer.customerId
+      );
+
+    customer.addresses =
+      customer.addresses.filter(
+        address =>
+          address._id.toString() !==
+          req.params.id
+      );
+
+    await customer.save();
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Address deleted successfully"
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+
+};
+
+export const getProfile = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const customer =
+      await Customer.findById(
+        req.customer.customerId
+      ).select(
+        "-__v"
+      );
+
+    if (!customer) {
+
+      return res.status(404).json({
+
+        success: false,
+
+        message: "Customer not found"
+
+      });
+
+    }
+
+    res.status(200).json({
+
+      success: true,
+
+      customer
+
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+
+      success: false,
+
+      message: error.message
+
+    });
+
+  }
+
+};
+
+export const updateProfile = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const customerId =
+      req.customer.customerId;
+
+    const {
+
+      name,
+
+      email,
+
+      gender,
+
+      dateOfBirth
+
+    } = req.body;
+
+    const customer =
+      await Customer.findById(
+        customerId
+      );
+
+    if (!customer) {
+
+      return res.status(404).json({
+
+        success: false,
+
+        message: "Customer not found"
+
+      });
+
+    }
+
+    customer.name =
+      name?.trim() ||
+      customer.name;
+
+    customer.email =
+      email?.trim().toLowerCase() ||
+      customer.email;
+
+    customer.gender =
+      gender ||
+      customer.gender;
+
+    customer.dateOfBirth =
+      dateOfBirth ||
+      customer.dateOfBirth;
+
+    await customer.save();
+
+    res.status(200).json({
+
+      success: true,
+
+      message:
+        "Profile updated successfully",
+
+      customer
+
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+
+      success: false,
+
+      message: error.message
+
+    });
+
+  }
+
+};
+
+export const toggleFavorite =
+async (req, res) => {
+
+    try {
+
+        const customerId =
+            req.customer.customerId;
+
+        const {
+            productId
+        } = req.params;
+
+        const customer =
+            await Customer.findById(
+                customerId
+            );
+
+        if (!customer) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Customer not found"
+
+            });
+
+        }
+
+        const alreadyFavorite =
+            customer.favorites.includes(
+                productId
+            );
+
+        if (alreadyFavorite) {
+
+            customer.favorites =
+                customer.favorites.filter(
+                    id =>
+                        id.toString() !==
+                        productId
+                );
+
+        }
+
+        else {
+
+            customer.favorites.push(
+                productId
+            );
+
+        }
+
+        await customer.save();
+
+        res.status(200).json({
+
+            success: true,
+
+            favorite:
+                !alreadyFavorite,
+
+            message:
+                alreadyFavorite
+                    ? "Removed from favorites"
+                    : "Added to favorites"
+
+        });
+
+    }
+
+    catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};
+
+export const getFavorites =
+async (req, res) => {
+
+    try {
+
+        const customer =
+            await Customer
+                .findById(
+                    req.customer.customerId
+                )
+                .populate(
+                    "favorites"
+                );
+
+        if (!customer) {
+
+            return res.status(404).json({
+
+                success: false,
+
+                message: "Customer not found"
+
+            });
+
+        }
+
+        res.status(200).json({
+
+            success: true,
+
+            favorites:
+                customer.favorites
+
+        });
+
+    }
+
+    catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
 
 };

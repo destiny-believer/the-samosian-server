@@ -29,7 +29,7 @@ const agentMiddleware =
                     process.env.JWT_SECRET
                 );
             
-                console.log("Decoded Token:", decoded);
+                // console.log("Decoded Token:", decoded);
 
             req.agent = decoded;
 

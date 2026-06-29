@@ -8,10 +8,12 @@ import {
     approveAgent,
     rejectAgent,
     getAssignedOrders,
+    getPendingAgents,
     pickupOrder,
     startDelivery,
     deliverOrder,
-    updateLocation
+    updateLocation,
+    getAssignedOrderById
 }
     from "../controllers/agent/agentController.js";
 
@@ -54,9 +56,21 @@ router.delete(
 );
 
 router.get(
+    "/admin/pending",
+    adminMiddleware,
+    getPendingAgents
+);
+
+router.get(
     "/orders",
     agentMiddleware,
     getAssignedOrders
+);
+
+router.get(
+    "/orders/:id",
+    agentMiddleware,
+    getAssignedOrderById
 );
 
 router.patch(

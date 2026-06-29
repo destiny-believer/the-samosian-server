@@ -1,29 +1,32 @@
 import express from "express";
 
 import {
-    createProduct,
-    getProducts,
-    getProductById,
-    updateProduct,
-    deleteProduct,
-    toggleAvailability
+  createProduct,
+  getProducts,
+  getProductById,
+  updateProduct,
+  deleteProduct,
+  toggleAvailability,
+  addReview,
+  getMyReview
 }
-    from "../controllers/product/productController.js";
+  from "../controllers/product/productController.js";
 
 import adminMiddleware
-    from "../middleware/adminMiddleware.js";
+  from "../middleware/adminMiddleware.js";
+import customerMiddleware from "../middleware/customerMiddleware.js";
 
 const router = express.Router();
 
 router.post(
-    "/",
-    adminMiddleware,
-    createProduct
+  "/",
+  adminMiddleware,
+  createProduct
 );
 
 router.get(
-    "/",
-    getProducts
+  "/",
+  getProducts
 );
 
 router.get(
@@ -47,6 +50,22 @@ router.patch(
   "/toggle/:id",
   adminMiddleware,
   toggleAvailability
-); 
+);
+
+router.post(
+  "/review/:productId",
+  customerMiddleware,
+  addReview
+);
+
+router.get(
+
+  "/review/:productId",
+
+  customerMiddleware,
+
+  getMyReview
+
+);
 
 export default router;

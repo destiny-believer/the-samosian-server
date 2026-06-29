@@ -1,12 +1,19 @@
 import express from "express";
 import customerMiddleware from "../middleware/customerMiddleware.js";
-import { addAddress } from "../controllers/customer/customerController.js";
 
 import {
   sendOtp,
-  verifyOtp
+  verifyOtp,
+  addAddress,
+  getAddresses,
+  updateAddress,
+  deleteAddress,
+  getProfile,
+  updateProfile,
+  getFavorites,
+  toggleFavorite
 }
-from "../controllers/customer/customerController.js";
+  from "../controllers/customer/customerController.js";
 
 const router = express.Router();
 
@@ -20,6 +27,48 @@ router.post(
   verifyOtp
 );
 
-router.post("/address",customerMiddleware, addAddress);
+router.post("/address", customerMiddleware, addAddress);
+
+router.get(
+  "/profile",
+  customerMiddleware,
+  getProfile
+);
+
+router.put(
+  "/profile",
+  customerMiddleware,
+  updateProfile
+);
+
+router.get(
+  "/address",
+  customerMiddleware,
+  getAddresses
+);
+
+router.put(
+  "/address/:id",
+  customerMiddleware,
+  updateAddress
+);
+
+router.delete(
+  "/address/:id",
+  customerMiddleware,
+  deleteAddress
+);
+
+router.patch(
+  "/favorite/:productId",
+  customerMiddleware,
+  toggleFavorite
+);
+
+router.get(
+  "/favorites",
+  customerMiddleware,
+  getFavorites
+);
 
 export default router;

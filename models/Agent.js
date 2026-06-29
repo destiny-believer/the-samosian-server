@@ -1,57 +1,105 @@
 import mongoose from "mongoose";
 
 const agentSchema = new mongoose.Schema(
-{
-    name:{
-        type:String,
-        required:true
-    },
+    {
+        name: {
+            type: String,
+            required: true
+        },
 
-    phone:{
-        type:String,
-        required:true,
-        unique:true
-    },
+        phone: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true
+        },
 
-    email:{
-        type:String,
-        required:true,
-        unique:true
-    },
+        email: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+            trim: true
+        },
 
-    vehicleNumber:{
-        type:String,
-        required:true
-    },
+        vehicleNumber: {
+            type: String,
+            required: true
+        },
 
-    isVerified:{
-        type:Boolean,
-        default:false
-    },
+        isVerified: {
+            type: Boolean,
+            default: false
+        },
 
-    isApproved:{
-        type:Boolean,
-        default:false
-    },
+        approvalStatus: {
+            type: String,
+            enum: [
+                "Pending",
+                "Approved",
+                "Rejected"
+            ],
+            default: "Pending"
+        },
 
-    isAvailable:{
-        type:Boolean,
-        default:true
-    },
+        agentPhoto: {
+            type: String,
+            default: ""
+        },
 
-    currentLatitude:{
-        type:Number,
-        default:0
-    },
+        vehicleType: {
+            type: String,
+            enum: [
+                "Bike",
+                "Scooter",
+                "Cycle"
+            ],
+            default: "Bike"
+        },
 
-    currentLongitude:{
-        type:Number,
-        default:0
+        licenseNumber: {
+            type: String,
+            required: true
+        },
+
+        rejectionReason: {
+            type: String,
+            default: ""
+        },
+
+        approvedAt: {
+            type: Date,
+            default: null
+        },
+
+        isAvailable: {
+            type: Boolean,
+            default: true
+        },
+
+        currentLatitude: {
+            type: Number,
+            default: 0
+        },
+
+        currentLongitude: {
+            type: Number,
+            default: 0
+        },
+
+        isOnline: {
+            type: Boolean,
+            default: false
+        },
+
+        lastLocationUpdated: {
+            type: Date,
+            default: Date.now
+        }
+    },
+    {
+        timestamps: true
     }
-},
-{
-    timestamps:true
-}
 );
 
 const Agent = mongoose.model(
