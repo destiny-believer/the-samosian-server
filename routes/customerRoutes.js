@@ -11,7 +11,8 @@ import {
   getProfile,
   updateProfile,
   getFavorites,
-  toggleFavorite
+  toggleFavorite,
+  firebaseLogin
 }
   from "../controllers/customer/customerController.js";
 
@@ -20,6 +21,11 @@ const router = express.Router();
 router.post(
   "/send-otp",
   sendOtp
+);
+
+router.post(
+    "/firebase-login",
+    firebaseLogin
 );
 
 router.post(

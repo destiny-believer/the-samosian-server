@@ -371,93 +371,49 @@ export const addReview =
 
     };
 
-export const getMyReview = async (
-    req,
-    res
-) => {
+export const getMyReview = async (req, res) => {
 
     try {
 
-        const customerId =
-            req.customer.customerId;
+        const customerId = req.customer.customerId;
+        const { productId } = req.params;
 
-        const {
-            productId
-        } = req.params;
-
-        const product =
-            await Product.findById(
-                productId
-            );
+        const product = await Product.findById(productId);
 
         if (!product) {
-
             return res.status(404).json({
-
                 success: false,
-
                 message: "Product not found"
-
             });
-
         }
 
         const review = product.reviews.find(
-
             review =>
-
                 review.customer &&
-
                 review.customer.toString() === customerId
-
         );
 
         if (!review) {
-
-            res.status(200).json({
-
+            return res.status(200).json({
                 success: true,
-
-                reviewed: true,
-
-                review: {
-
-                    rating: review.rating,
-
-                    comment: review.comment,
-
-                    customerName: review.customerName,
-
-                    createdAt: review.createdAt,
-
-                    updatedAt: review.updatedAt
-
-                }
-
+                reviewed: false,
+                review: null
             });
-
         }
 
-        res.status(200).json({
-
+        return res.status(200).json({
             success: true,
-
             reviewed: true,
-
             review
-
         });
 
-    }
+    } catch (error) {
 
-    catch (error) {
+        console.error(error);
 
-        res.status(500).json({
-
+        return res.status(500).json({
             success: false,
-
             message: error.message
-
         });
 
     }

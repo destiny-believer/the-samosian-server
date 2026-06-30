@@ -2,6 +2,8 @@ import Customer from "../../models/Customer.js";
 import otpStore from "../../utils/otpStore.js";
 import jwt from "jsonwebtoken";
 import { calculateDistance } from "../../utils/distanceCalculator.js";
+import app from "../../config/firebaseAdmin.js";
+import { getAuth } from "firebase-admin/auth";
 
 export const sendOtp = async (
   req,
@@ -37,6 +39,101 @@ export const sendOtp = async (
     res.status(500).json({
       success: false,
       message: error.message
+    });
+
+  }
+
+};
+
+export const firebaseLogin = async (req, res) => {
+
+  try {
+
+    const { firebaseToken } = req.body;
+
+    if (!firebaseToken) {
+
+      return res.status(400).json({
+        success: false,
+        message: "Firebase token is required"
+      });
+
+    }
+
+    const decodedToken =
+      await getAuth(app).verifyIdToken(firebaseToken);
+
+    const phone =
+      decodedToken.phone_number.replace("+91", "");
+
+    const firebaseUid =
+      decodedToken.uid;
+
+    let customer =
+      await Customer.findOne({ phone });
+
+    if (!customer) {
+
+      customer =
+        await Customer.create({
+
+          phone,
+
+          firebaseUid,
+
+          isVerified: true
+
+        });
+
+    }
+
+    customer.firebaseUid = firebaseUid;
+    
+    customer.isVerified = true;
+
+    await customer.save();
+
+    const token =
+      jwt.sign(
+
+        {
+
+          customerId: customer._id
+
+        },
+
+        process.env.JWT_SECRET,
+
+        {
+
+          expiresIn: "30d"
+
+        }
+
+      );
+
+    res.status(200).json({
+
+      success: true,
+
+      token,
+
+      customer
+
+    });
+
+  }
+
+  catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+
+      success: false,
+
+      message: error.message
+
     });
 
   }
@@ -450,137 +547,137 @@ export const updateProfile = async (
 };
 
 export const toggleFavorite =
-async (req, res) => {
+  async (req, res) => {
 
     try {
 
-        const customerId =
-            req.customer.customerId;
+      const customerId =
+        req.customer.customerId;
 
-        const {
-            productId
-        } = req.params;
+      const {
+        productId
+      } = req.params;
 
-        const customer =
-            await Customer.findById(
-                customerId
-            );
+      const customer =
+        await Customer.findById(
+          customerId
+        );
 
-        if (!customer) {
+      if (!customer) {
 
-            return res.status(404).json({
+        return res.status(404).json({
 
-                success: false,
+          success: false,
 
-                message: "Customer not found"
-
-            });
-
-        }
-
-        const alreadyFavorite =
-            customer.favorites.includes(
-                productId
-            );
-
-        if (alreadyFavorite) {
-
-            customer.favorites =
-                customer.favorites.filter(
-                    id =>
-                        id.toString() !==
-                        productId
-                );
-
-        }
-
-        else {
-
-            customer.favorites.push(
-                productId
-            );
-
-        }
-
-        await customer.save();
-
-        res.status(200).json({
-
-            success: true,
-
-            favorite:
-                !alreadyFavorite,
-
-            message:
-                alreadyFavorite
-                    ? "Removed from favorites"
-                    : "Added to favorites"
+          message: "Customer not found"
 
         });
+
+      }
+
+      const alreadyFavorite =
+        customer.favorites.includes(
+          productId
+        );
+
+      if (alreadyFavorite) {
+
+        customer.favorites =
+          customer.favorites.filter(
+            id =>
+              id.toString() !==
+              productId
+          );
+
+      }
+
+      else {
+
+        customer.favorites.push(
+          productId
+        );
+
+      }
+
+      await customer.save();
+
+      res.status(200).json({
+
+        success: true,
+
+        favorite:
+          !alreadyFavorite,
+
+        message:
+          alreadyFavorite
+            ? "Removed from favorites"
+            : "Added to favorites"
+
+      });
 
     }
 
     catch (error) {
 
-        res.status(500).json({
+      res.status(500).json({
 
-            success: false,
+        success: false,
 
-            message: error.message
+        message: error.message
 
-        });
+      });
 
     }
 
-};
+  };
 
 export const getFavorites =
-async (req, res) => {
+  async (req, res) => {
 
     try {
 
-        const customer =
-            await Customer
-                .findById(
-                    req.customer.customerId
-                )
-                .populate(
-                    "favorites"
-                );
+      const customer =
+        await Customer
+          .findById(
+            req.customer.customerId
+          )
+          .populate(
+            "favorites"
+          );
 
-        if (!customer) {
+      if (!customer) {
 
-            return res.status(404).json({
+        return res.status(404).json({
 
-                success: false,
+          success: false,
 
-                message: "Customer not found"
-
-            });
-
-        }
-
-        res.status(200).json({
-
-            success: true,
-
-            favorites:
-                customer.favorites
+          message: "Customer not found"
 
         });
+
+      }
+
+      res.status(200).json({
+
+        success: true,
+
+        favorites:
+          customer.favorites
+
+      });
 
     }
 
     catch (error) {
 
-        res.status(500).json({
+      res.status(500).json({
 
-            success: false,
+        success: false,
 
-            message: error.message
+        message: error.message
 
-        });
+      });
 
     }
 
-};
+  };

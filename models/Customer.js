@@ -104,7 +104,12 @@ const customerSchema = new mongoose.Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Product"
             }
-        ]
+        ],
+        firebaseUid: {
+            type: String,
+            unique: true,
+            sparse: true
+        }
     },
 
     {

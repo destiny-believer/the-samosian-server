@@ -9,6 +9,7 @@ import orderRoutes from "./routes/orderRoutes.js";
 import agentRoutes from "./routes/agentRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js"
 import testEmailRoutes from "./routes/testEmailRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js"
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes );
 
 app.get("/", (req, res) => {
   res.send("The Samosian API Running");

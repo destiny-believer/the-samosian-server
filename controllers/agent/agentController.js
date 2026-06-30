@@ -719,11 +719,12 @@ export const updateLocation =
             const io =
                 getIO();
 
-            const order =
-                await Order.findOne({
-                    agent: agent._id,
-                    orderStatus: "On The Way"
-                });
+            const order = await Order.findOne({
+                agent: agent._id,
+                orderStatus: {
+                    $in: ["Agent Assigned", "On The Way"]
+                }
+            });
 
             console.log(
                 "Order Found:",
