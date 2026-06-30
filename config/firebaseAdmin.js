@@ -1,12 +1,12 @@
 import { initializeApp, cert, getApps } from "firebase-admin/app";
-import fs from "fs";
 
-const serviceAccount = JSON.parse(
-    fs.readFileSync(
-        new URL("./firebaseServiceAccount.json", import.meta.url),
-        "utf8"
-    )
-);
+const serviceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+};
 
 const app =
     getApps().length === 0
