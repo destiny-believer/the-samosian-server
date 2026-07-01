@@ -1,4 +1,5 @@
 import Category from "../../models/Category.js";
+import Product from "../../models/Product.js"
 
 export const createCategory = async (
   req,
@@ -41,25 +42,61 @@ export const createCategory = async (
 
 };
 
-export const getCategories =
-  async (req, res) => {
+export const getCategories = async (req, res) => {
 
     try {
 
-      const categories =
-        await Category.find();
+        const categories = await Category.find().sort({ name: 1 });
 
-      res.status(200).json({
-        success: true,
-        categories
-      });
+        const finalCategories = await Promise.all(
 
-    } catch (error) {
+            categories.map(async (category) => {
 
-      res.status(500).json({
-        success: false,
-        message: error.message
-      });
+                const productCount = await Product.countDocuments({
+
+                    category: category._id,
+
+                    isAvailable: true
+
+                });
+
+                return {
+
+                    _id: category._id,
+
+                    name: category.name,
+
+                    image: category.image,
+
+                    productCount
+
+                };
+
+            })
+
+        );
+
+        res.status(200).json({
+
+            success: true,
+
+            categories: finalCategories
+
+        });
+
+    }
+
+    catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
 
     }
 

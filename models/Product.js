@@ -1,22 +1,24 @@
 import mongoose from "mongoose";
 
-const variantSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true
-    },
+const variantSchema = new mongoose.Schema({
 
-    price: {
-      type: Number,
-      required: true
-    }
+  name: {
+
+    type: String,
+
+    required: true
+
   },
-  {
-    _id: false
+
+  price: {
+
+    type: Number,
+
+    required: true
+
   }
-);
+
+});
 
 const productSchema = new mongoose.Schema(
   {
@@ -71,16 +73,6 @@ const productSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
-
-    totalOrders: {
-      type: Number,
-      default: 0
-    },
-
-    isFeatured: {
-      type: Boolean,
-      default: false
-    },
     reviews: [
       {
         customer: {
@@ -113,7 +105,30 @@ const productSchema = new mongoose.Schema(
           default: null
         }
       }
-    ]
+    ],
+    bestSeller: {
+      type: Boolean,
+      default: false
+    },
+
+    featured: {
+      type: Boolean,
+      default: false
+    },
+
+    totalOrders: {
+      type: Number,
+      default: 0
+    },
+
+    views: {
+      type: Number,
+      default: 0
+    },
+    displayOrder: {
+      type: Number,
+      default: 0
+    }
 
   },
   {

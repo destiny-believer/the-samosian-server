@@ -8,7 +8,12 @@ import {
   deleteProduct,
   toggleAvailability,
   addReview,
-  getMyReview
+  getMyReview,
+  getTrendingProducts,
+  getBestSellerProducts,
+  getTopRatedProducts,
+  getFeaturedProducts,
+  getHomeReviews
 }
   from "../controllers/product/productController.js";
 
@@ -66,6 +71,31 @@ router.get(
 
   getMyReview
 
+);
+
+router.get(
+    "/featured",
+    getFeaturedProducts
+);
+
+router.get(
+    "/trending",
+    getTrendingProducts
+);
+
+router.get(
+    "/top-rated",
+    getTopRatedProducts
+);
+
+router.get(
+    "/best-sellers",
+    getBestSellerProducts
+);
+
+router.get(
+    "/home-reviews",
+    getHomeReviews  
 );
 
 export default router;

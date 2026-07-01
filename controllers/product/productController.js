@@ -419,3 +419,250 @@ export const getMyReview = async (req, res) => {
     }
 
 };
+
+export const getTrendingProducts = async (req, res) => {
+
+    try {
+
+        const products = await Product.find({
+
+            isAvailable: true
+
+        })
+
+            .sort({
+                displayOrder: 1,
+                totalOrders: -1
+            })
+
+            .limit(8);
+
+        res.status(200).json({
+
+            success: true,
+
+            products
+
+        });
+
+    }
+
+    catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};
+
+export const getBestSellerProducts = async (req, res) => {
+
+    try {
+
+        const products = await Product.find({
+
+            bestSeller: true,
+
+            isAvailable: true
+
+        })
+            .populate("category", "categoryName")
+            .limit(6);
+
+        res.status(200).json({
+
+            success: true,
+
+            products
+
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};
+
+export const getFeaturedProducts = async (req, res) => {
+
+    try {
+
+        const products = await Product.find({
+
+            isFeatured: true,
+
+            isAvailable: true
+
+        })
+            .populate("category", "name")
+            .limit(6);
+
+        res.status(200).json({
+
+            success: true,
+
+            products
+
+        });
+
+    }
+
+    catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};
+
+export const getTopRatedProducts = async (req, res) => {
+
+    try {
+
+        const products = await Product.find({
+
+            isAvailable: true
+
+        })
+
+            .populate("category", "name")
+
+            .sort({
+
+                rating: -1,
+
+                totalRatings: -1
+
+            })
+
+            .limit(6);
+
+        res.status(200).json({
+
+            success: true,
+
+            products
+
+        });
+
+    }
+
+    catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};
+
+export const getHomeReviews = async (req, res) => {
+
+    try {
+
+        const products = await Product.find({
+
+            "reviews.0": { $exists: true }
+
+        })
+        .populate(
+            "reviews.customer",
+            "name profileImage"
+        );
+
+        let allReviews = [];
+
+        products.forEach(product => {
+
+            product.reviews.forEach(review => {
+
+                allReviews.push({
+
+                    _id: review._id,
+
+                    rating: review.rating,
+
+                    comment: review.comment,
+
+                    createdAt: review.createdAt,
+
+                    customer: review.customer,
+
+                    customerName: review.customerName,
+
+                    product: {
+
+                        _id: product._id,
+
+                        productName: product.name,
+
+                        image: product.image
+
+                    }
+
+                });
+
+            });
+
+        });
+
+        allReviews.sort(
+
+            (a, b) =>
+
+                new Date(b.createdAt) -
+
+                new Date(a.createdAt)
+
+        );
+
+        res.status(200).json({
+
+            success: true,
+
+            reviews: allReviews.slice(0, 6)
+
+        });
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};

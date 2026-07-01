@@ -22,10 +22,10 @@ export const addToCart = async (
         productId
       );
 
-    if(!product){
+    if (!product) {
       return res.status(404).json({
-        success:false,
-        message:"Product not found"
+        success: false,
+        message: "Product not found"
       });
     }
 
@@ -34,38 +34,39 @@ export const addToCart = async (
         v => v.name === variantName
       );
 
-    if(!variant){
+    if (!variant) {
       return res.status(404).json({
-        success:false,
-        message:"Variant not found"
+        success: false,
+        message: "Variant not found"
       });
     }
 
     let cart =
       await Cart.findOne({
-        customer:customerId
+        customer: customerId
       });
 
-    if(!cart){
+    if (!cart) {
 
       cart =
         await Cart.create({
-          customer:customerId,
-          items:[]
+          customer: customerId,
+          items: []
         });
 
     }
 
-    const existingItem =
-      cart.items.find(
-        item =>
-          item.product.toString() ===
-          productId &&
-          item.variantName ===
-          variantName
-      );
+    const existingItem = cart.items.find(
 
-    if(existingItem){
+      item =>
+
+        item.product.toString() === productId &&
+
+        item.variantId.toString() === variant._id.toString()
+
+    );
+
+    if (existingItem) {
 
       existingItem.quantity +=
         quantity;
@@ -73,40 +74,49 @@ export const addToCart = async (
     } else {
 
       cart.items.push({
-        product:productId,
-        variantName,
-        variantPrice:
-        variant.price,
+
+        product: product._id,
+
+        variantId: variant._id,
+
+        variantName: variant.name,
+
+        variantPrice: variant.price,
+
         quantity
+
       });
 
     }
 
-    cart.totalAmount =
-      cart.items.reduce(
-        (total,item)=>
-          total +
-          (
-            item.variantPrice *
-            item.quantity
-          ),
-        0
-      );
+    cart.totalAmount = cart.items.reduce(
+
+      (total, item) =>
+
+        total +
+
+        item.variantPrice *
+
+        item.quantity,
+
+      0
+
+    );
 
     await cart.save();
 
     res.status(200).json({
-      success:true,
+      success: true,
       message:
-      "Item added to cart",
+        "Item added to cart",
       cart
     });
 
-  } catch(error){
+  } catch (error) {
 
     res.status(500).json({
-      success:false,
-      message:error.message
+      success: false,
+      message: error.message
     });
 
   }
@@ -156,183 +166,183 @@ export const getCart = async (
 };
 
 export const updateQuantity =
-async (req,res) => {
+  async (req, res) => {
 
-  try {
+    try {
 
-    const customerId =
-      req.customer.customerId;
+      const customerId =
+        req.customer.customerId;
 
-    const {
-      productId,
-      variantName,
-      quantity
-    } = req.body;
+      const {
+        productId,
+        variantName,
+        quantity
+      } = req.body;
 
-    const cart =
-      await Cart.findOne({
-        customer: customerId
+      const cart =
+        await Cart.findOne({
+          customer: customerId
+        });
+
+      if (!cart) {
+        return res.status(404).json({
+          success: false,
+          message: "Cart not found"
+        });
+      }
+
+      const item =
+        cart.items.find(
+          item =>
+            item.product.toString() ===
+            productId &&
+            item.variantName ===
+            variantName
+        );
+
+      if (!item) {
+        return res.status(404).json({
+          success: false,
+          message: "Item not found"
+        });
+      }
+
+      item.quantity = quantity;
+
+      cart.totalAmount =
+        cart.items.reduce(
+          (total, item) =>
+            total +
+            (
+              item.variantPrice *
+              item.quantity
+            ),
+          0
+        );
+
+      await cart.save();
+
+      res.status(200).json({
+        success: true,
+        cart
       });
 
-    if(!cart){
-      return res.status(404).json({
-        success:false,
-        message:"Cart not found"
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message: error.message
       });
+
     }
 
-    const item =
-      cart.items.find(
-        item =>
-          item.product.toString() ===
-          productId &&
-          item.variantName ===
-          variantName
-      );
-
-    if(!item){
-      return res.status(404).json({
-        success:false,
-        message:"Item not found"
-      });
-    }
-
-    item.quantity = quantity;
-
-    cart.totalAmount =
-      cart.items.reduce(
-        (total,item)=>
-          total +
-          (
-            item.variantPrice *
-            item.quantity
-          ),
-        0
-      );
-
-    await cart.save();
-
-    res.status(200).json({
-      success:true,
-      cart
-    });
-
-  } catch(error){
-
-    res.status(500).json({
-      success:false,
-      message:error.message
-    });
-
-  }
-
-};
+  };
 
 export const removeItem =
-async (req,res) => {
+  async (req, res) => {
 
-  try {
+    try {
 
-    const customerId =
-      req.customer.customerId;
+      const customerId =
+        req.customer.customerId;
 
-    const {
-      productId,
-      variantName
-    } = req.body;
+      const {
+        productId,
+        variantName
+      } = req.body;
 
-    const cart =
-      await Cart.findOne({
-        customer:customerId
+      const cart =
+        await Cart.findOne({
+          customer: customerId
+        });
+
+      if (!cart) {
+        return res.status(404).json({
+          success: false,
+          message: "Cart not found"
+        });
+      }
+
+      cart.items =
+        cart.items.filter(
+          item =>
+            !(
+              item.product.toString()
+              === productId
+              &&
+              item.variantName
+              === variantName
+            )
+        );
+
+      cart.totalAmount =
+        cart.items.reduce(
+          (total, item) =>
+            total +
+            (
+              item.variantPrice *
+              item.quantity
+            ),
+          0
+        );
+
+      await cart.save();
+
+      res.status(200).json({
+        success: true,
+        cart
       });
 
-    if(!cart){
-      return res.status(404).json({
-        success:false,
-        message:"Cart not found"
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message: error.message
       });
+
     }
 
-    cart.items =
-      cart.items.filter(
-        item =>
-          !(
-            item.product.toString()
-            === productId
-            &&
-            item.variantName
-            === variantName
-          )
-      );
-
-    cart.totalAmount =
-      cart.items.reduce(
-        (total,item)=>
-          total +
-          (
-            item.variantPrice *
-            item.quantity
-          ),
-        0
-      );
-
-    await cart.save();
-
-    res.status(200).json({
-      success:true,
-      cart
-    });
-
-  } catch(error){
-
-    res.status(500).json({
-      success:false,
-      message:error.message
-    });
-
-  }
-
-};
+  };
 
 export const clearCart =
-async (req,res) => {
+  async (req, res) => {
 
-  try {
+    try {
 
-    const customerId =
-      req.customer.customerId;
+      const customerId =
+        req.customer.customerId;
 
-    const cart =
-      await Cart.findOne({
-        customer:customerId
+      const cart =
+        await Cart.findOne({
+          customer: customerId
+        });
+
+      if (!cart) {
+        return res.status(404).json({
+          success: false,
+          message: "Cart not found"
+        });
+      }
+
+      cart.items = [];
+
+      cart.totalAmount = 0;
+
+      await cart.save();
+
+      res.status(200).json({
+        success: true,
+        message:
+          "Cart cleared successfully"
       });
 
-    if(!cart){
-      return res.status(404).json({
-        success:false,
-        message:"Cart not found"
+    } catch (error) {
+
+      res.status(500).json({
+        success: false,
+        message: error.message
       });
+
     }
 
-    cart.items = [];
-
-    cart.totalAmount = 0;
-
-    await cart.save();
-
-    res.status(200).json({
-      success:true,
-      message:
-      "Cart cleared successfully"
-    });
-
-  } catch(error){
-
-    res.status(500).json({
-      success:false,
-      message:error.message
-    });
-
-  }
-
-};
+  };
