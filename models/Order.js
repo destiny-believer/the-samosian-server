@@ -47,13 +47,37 @@ const orderSchema = new mongoose.Schema(
         },
 
         address: {
+
+            label: String,
+
+            receiverName: String,
+
+            phoneNumber: String,
+
             houseNo: String,
+
+            apartment: String,
+
             street: String,
+
             landmark: String,
+
+            area: String,
+
             city: String,
+
+            state: String,
+
             pincode: String,
+
+            formattedAddress: String,
+
             latitude: Number,
-            longitude: Number
+
+            longitude: Number,
+
+            deliveryInstructions: String
+
         },
 
         items: [orderItemSchema],
@@ -120,7 +144,17 @@ const orderSchema = new mongoose.Schema(
                     default: Date.now
                 }
             }
-        ]
+        ],
+        invoiceNumber: {
+
+            type: String,
+
+            unique: true,
+
+            default: null
+
+        },
+
     },
     {
         timestamps: true

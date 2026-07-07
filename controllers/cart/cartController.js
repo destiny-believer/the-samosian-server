@@ -9,7 +9,7 @@ export const addToCart = async (
   try {
 
     const customerId =
-      req.customer.customerId;
+      req.customer.id;
 
     const {
       productId,
@@ -131,7 +131,7 @@ export const getCart = async (
   try {
 
     const customerId =
-      req.customer.customerId;
+      req.customer.id;
 
     const cart =
       await Cart.findOne({
@@ -171,7 +171,7 @@ export const updateQuantity =
     try {
 
       const customerId =
-        req.customer.customerId;
+        req.customer.id;
 
       const {
         productId,
@@ -244,7 +244,7 @@ export const removeItem =
     try {
 
       const customerId =
-        req.customer.customerId;
+        req.customer.id;
 
       const {
         productId,
@@ -310,7 +310,7 @@ export const clearCart =
     try {
 
       const customerId =
-        req.customer.customerId;
+        req.customer.id;
 
       const cart =
         await Cart.findOne({

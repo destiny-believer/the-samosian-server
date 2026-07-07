@@ -2,55 +2,172 @@ import mongoose from "mongoose";
 
 const addressSchema = new mongoose.Schema(
     {
-        houseNo: {
+        label: {
+
             type: String,
-            required: true
+
+            enum: [
+
+                "Home",
+
+                "Work",
+
+                "Other"
+
+            ],
+
+            default: "Home"
+
+        },
+
+        receiverName: {
+
+            type: String,
+
+            default: "",
+
+            trim: true
+
+        },
+
+        phoneNumber: {
+
+            type: String,
+
+            default: "",
+
+            trim: true
+
+        },
+
+        houseNo: {
+
+            type: String,
+
+            required: true,
+
+            trim: true
+
+        },
+
+        apartment: {
+
+            type: String,
+
+            default: "",
+
+            trim: true
+
         },
 
         street: {
+
             type: String,
-            default: ""
+
+            required: true,
+
+            trim: true
+
         },
 
         landmark: {
+
             type: String,
-            default: ""
+
+            default: "",
+
+            trim: true
+
+        },
+
+        area: {
+
+            type: String,
+
+            default: "",
+
+            trim: true
+
         },
 
         city: {
+
             type: String,
-            default: ""
+
+            required: true,
+
+            trim: true
+
+        },
+
+        state: {
+
+            type: String,
+
+            default: "",
+
+            trim: true
+
         },
 
         pincode: {
+
             type: String,
+
+            required: true,
+
+            trim: true
+
+        },
+
+        formattedAddress: {
+
+            type: String,
+
             default: ""
+
         },
 
-        latitude: {
-            type: Number,
-            required: true
+        location: {
+
+            latitude: {
+
+                type: Number,
+
+                default: null
+
+            },
+
+            longitude: {
+
+                type: Number,
+
+                default: null
+
+            }
+
         },
 
-        longitude: {
-            type: Number,
-            required: true
-        },
+        deliveryInstructions: {
 
-        label: {
             type: String,
-            enum: [
-                "Home",
-                "Work",
-                "Other"
-            ],
-            default: "Home"
+
+            default: ""
+
+        },
+
+        isDefault: {
+
+            type: Boolean,
+
+            default: false
+
         }
+
     },
     {
         timestamps: true
-    }
-);
+    });
 
 const customerSchema = new mongoose.Schema(
     {
@@ -96,6 +213,11 @@ const customerSchema = new mongoose.Schema(
         isVerified: {
             type: Boolean,
             default: false
+        },
+
+        lastLogin: {
+            type: Date,
+            default: Date.now
         },
 
         addresses: [addressSchema],

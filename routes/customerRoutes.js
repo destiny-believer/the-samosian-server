@@ -15,6 +15,7 @@ import {
   firebaseLogin
 }
   from "../controllers/customer/customerController.js";
+import { getWishlist, toggleWishlist } from "../controllers/customer/wishlistController.js";
 
 const router = express.Router();
 
@@ -75,6 +76,18 @@ router.get(
   "/favorites",
   customerMiddleware,
   getFavorites
+);
+
+router.post(
+    "/wishlist",
+    customerMiddleware,
+    toggleWishlist
+);
+
+router.get(
+    "/wishlist",
+    customerMiddleware,
+    getWishlist
 );
 
 export default router;

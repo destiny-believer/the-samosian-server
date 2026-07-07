@@ -81,62 +81,57 @@ export const firebaseLogin = async (req, res) => {
 
           firebaseUid,
 
-          isVerified: true
+          isVerified: true,
+
+          addresses: []
 
         });
 
     }
 
     customer.firebaseUid = firebaseUid;
-    
+
     customer.isVerified = true;
+
+    customer.lastLogin = Date.now();
 
     await customer.save();
 
-    const token =
-      jwt.sign(
+    const token = jwt.sign(
+      {
+        id: customer._id
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "30d"
+      }
+    );
 
-        {
+res.status(200).json({
 
-          customerId: customer._id
+  success: true,
 
-        },
+  token,
 
-        process.env.JWT_SECRET,
+  customer
 
-        {
-
-          expiresIn: "30d"
-
-        }
-
-      );
-
-    res.status(200).json({
-
-      success: true,
-
-      token,
-
-      customer
-
-    });
+});
 
   }
 
   catch (error) {
 
-    console.log(error);
+  console.log(error);
 
-    res.status(500).json({
+  res.status(500).json({
 
-      success: false,
+    success: false,
 
-      message: error.message
+    message: error.message
 
-    });
+  });
 
-  }
+}
 
 };
 
@@ -223,7 +218,7 @@ export const addAddress =
 
       const customer =
         await Customer.findById(
-          req.customer.customerId
+          req.customer.id
         );
 
       if (!customer) {
@@ -234,15 +229,39 @@ export const addAddress =
       }
 
       const {
-        houseNo,
-        street,
-        landmark,
-        city,
-        pincode,
-        latitude,
-        longitude,
+
         label,
+
+        receiverName,
+
+        phoneNumber,
+
+        houseNo,
+
+        apartment,
+
+        street,
+
+        landmark,
+
+        area,
+
+        city,
+
+        state,
+
+        pincode,
+
+        formattedAddress,
+
+        latitude,
+
+        longitude,
+
+        deliveryInstructions,
+
         isDefault
+
       } = req.body;
 
       const shopLatitude =
@@ -269,14 +288,54 @@ export const addAddress =
 
       }
 
+      if (isDefault) {
+
+        customer.addresses.forEach(address => {
+
+          address.isDefault = false;
+
+        });
+
+      }
+
       customer.addresses.push({
+
+        label,
+
+        receiverName,
+
+        phoneNumber,
+
         houseNo,
+
+        apartment,
+
         street,
+
         landmark,
+
+        area,
+
         city,
+
+        state,
+
         pincode,
-        latitude,
-        longitude
+
+        formattedAddress,
+
+        location: {
+
+          latitude,
+
+          longitude
+
+        },
+
+        deliveryInstructions,
+
+        isDefault
+
       });
 
       await customer.save();
@@ -308,7 +367,7 @@ export const getAddresses = async (
 
     const customer =
       await Customer.findById(
-        req.customer.customerId
+        req.customer.id
       );
 
     res.status(200).json({
@@ -337,7 +396,7 @@ export const updateAddress = async (
 
     const customer =
       await Customer.findById(
-        req.customer.customerId
+        req.customer.id
       );
 
     const address =
@@ -387,7 +446,7 @@ export const deleteAddress = async (
 
     const customer =
       await Customer.findById(
-        req.customer.customerId
+        req.customer.id
       );
 
     customer.addresses =
@@ -425,7 +484,7 @@ export const getProfile = async (
 
     const customer =
       await Customer.findById(
-        req.customer.customerId
+        req.customer.id
       ).select(
         "-__v"
       );
@@ -472,7 +531,7 @@ export const updateProfile = async (
   try {
 
     const customerId =
-      req.customer.customerId;
+      req.customer.id;
 
     const {
 
@@ -552,7 +611,7 @@ export const toggleFavorite =
     try {
 
       const customerId =
-        req.customer.customerId;
+        req.customer.id;
 
       const {
         productId
@@ -639,7 +698,7 @@ export const getFavorites =
       const customer =
         await Customer
           .findById(
-            req.customer.customerId
+            req.customer.id
           )
           .populate(
             "favorites"

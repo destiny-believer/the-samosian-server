@@ -13,7 +13,9 @@ import {
   getBestSellerProducts,
   getTopRatedProducts,
   getFeaturedProducts,
-  getHomeReviews
+  getHomeReviews,
+  searchProducts,
+  getRecommendedProducts
 }
   from "../controllers/product/productController.js";
 
@@ -94,8 +96,18 @@ router.get(
 );
 
 router.get(
+    "/recommended",
+    getRecommendedProducts
+);
+
+router.get(
     "/home-reviews",
     getHomeReviews  
+);
+
+router.get(
+    "/search",
+    searchProducts
 );
 
 export default router;

@@ -11,6 +11,8 @@ import settingsRoutes from "./routes/settingsRoutes.js"
 import testEmailRoutes from "./routes/testEmailRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js"
 import homeRoutes from "./routes/homeRoutes.js"
+import path from "path";
+
 const app = express();
 
 app.use(cors());
@@ -41,5 +43,14 @@ app.use(
     "/api",
     testEmailRoutes
 );
+
+app.use(
+    "/uploads",
+    express.static(
+        path.join(process.cwd(), "uploads")
+    )
+
+);
+
 
 export default app;

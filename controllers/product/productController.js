@@ -258,7 +258,7 @@ export const addReview =
         try {
 
             const customerId =
-                req.customer.customerId;
+                req.customer.id;
 
             const {
                 rating,
@@ -283,6 +283,18 @@ export const addReview =
                 await Customer.findById(
                     customerId
                 );
+
+            if (!customer) {
+
+                return res.status(404).json({
+
+                    success: false,
+
+                    message: "Customer not found"
+
+                });
+
+            }
 
             const alreadyReviewed =
                 product.reviews.find(
@@ -321,19 +333,7 @@ export const addReview =
 
             }
 
-            product.reviews.push({
-
-                customer: customerId,
-
-                customerName: customer.name,
-
-                rating,
-
-                comment
-
-            });
-
-            const totalRating = product.reviews.reduce(
+            const totalReviews = product.reviews.reduce(
 
                 (sum, review) =>
 
@@ -342,9 +342,15 @@ export const addReview =
                 0
 
             );
-            product.totalRatings = product.reviews.length;
+            product.totalReviews = product.reviews.length;
 
-            product.rating = totalRating / product.totalRatings;
+            product.rating =
+                Number(
+                    (
+                        totalReviews /
+                        product.totalReviews
+                    ).toFixed(1)
+                );
 
             await product.save();
 
@@ -375,7 +381,7 @@ export const getMyReview = async (req, res) => {
 
     try {
 
-        const customerId = req.customer.customerId;
+        const customerId = req.customer.id;
         const { productId } = req.params;
 
         const product = await Product.findById(productId);
@@ -551,7 +557,7 @@ export const getTopRatedProducts = async (req, res) => {
 
                 rating: -1,
 
-                totalRatings: -1
+                totalReviews: -1
 
             })
 
@@ -590,10 +596,10 @@ export const getHomeReviews = async (req, res) => {
             "reviews.0": { $exists: true }
 
         })
-        .populate(
-            "reviews.customer",
-            "name profileImage"
-        );
+            .populate(
+                "reviews.customer",
+                "name profileImage"
+            );
 
         let allReviews = [];
 
@@ -666,3 +672,191 @@ export const getHomeReviews = async (req, res) => {
     }
 
 };
+
+// ======================================
+// Search Products
+// ======================================
+
+export const searchProducts = async (req, res) => {
+
+    try {
+
+        const {
+
+            keyword = ""
+
+        } = req.query;
+
+        const products = await Product.find({
+
+            isAvailable: true,
+
+            $or: [
+
+                {
+
+                    name: {
+
+                        $regex: keyword,
+
+                        $options: "i"
+
+                    }
+
+                },
+
+                {
+
+                    description: {
+
+                        $regex: keyword,
+
+                        $options: "i"
+
+                    }
+
+                }
+
+            ]
+
+        }).populate(
+
+            "category",
+
+            "name"
+
+        );
+
+        res.status(200).json({
+
+            success: true,
+
+            count: products.length,
+
+            products
+
+        });
+
+    }
+
+    catch (error) {
+
+        res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
+};
+
+// =======================================
+// Recommended Products
+// =======================================
+
+export const getRecommendedProducts =
+    async (req, res) => {
+
+        try {
+
+            const featured =
+                await Product.find({
+
+                    featured: true,
+
+                    isAvailable: true
+
+                }).limit(4);
+
+            const bestSeller =
+                await Product.find({
+
+                    bestSeller: true,
+
+                    isAvailable: true
+
+                }).limit(4);
+
+            const topRated =
+                await Product.find({
+
+                    rating: {
+
+                        $gte: 4
+
+                    },
+
+                    isAvailable: true
+
+                })
+
+                .sort({
+
+                    rating: -1
+
+                })
+
+                .limit(4);
+
+                            let recommended = [
+
+                ...featured,
+
+                ...bestSeller,
+
+                ...topRated
+
+            ];
+
+            recommended = recommended.filter(
+
+                (product, index, self) =>
+
+                    index === self.findIndex(
+
+                        item =>
+
+                            item._id.toString() ===
+
+                            product._id.toString()
+
+                    )
+
+            );
+
+            recommended = recommended.sort(
+
+                () =>
+
+                    Math.random() - 0.5
+
+            );
+
+            res.status(200).json({
+
+                success: true,
+
+                products: recommended.slice(0, 8)
+
+            });
+
+        }
+
+        catch (error) {
+
+            res.status(500).json({
+
+                success: false,
+
+                message: error.message
+
+            });
+
+        }
+
+    };
+
+    

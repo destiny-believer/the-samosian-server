@@ -95,6 +95,53 @@ const agentSchema = new mongoose.Schema(
         lastLocationUpdated: {
             type: Date,
             default: Date.now
+        },
+        currentOrder: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Order",
+            default: null
+        },
+
+        status: {
+            type: String,
+            enum: [
+                "Offline",
+                "Available",
+                "Assigned",
+                "Picking Up",
+                "Delivering"
+            ],
+            default: "Offline"
+        },
+
+        rating: {
+            type: Number,
+            default: 5
+        },
+
+        totalRatings: {
+            type: Number,
+            default: 0
+        },
+
+        todayEarnings: {
+            type: Number,
+            default: 0
+        },
+
+        totalEarnings: {
+            type: Number,
+            default: 0
+        },
+
+        completedDeliveries: {
+            type: Number,
+            default: 0
+        },
+
+        cancelledDeliveries: {
+            type: Number,
+            default: 0
         }
     },
     {

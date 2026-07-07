@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 const notificationSchema = new mongoose.Schema(
-
     {
 
         customer: {
@@ -9,6 +8,16 @@ const notificationSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
 
             ref: "Customer",
+
+            required: true
+
+        },
+
+        order: {
+
+            type: mongoose.Schema.Types.ObjectId,
+
+            ref: "Order",
 
             required: true
 
@@ -30,21 +39,31 @@ const notificationSchema = new mongoose.Schema(
 
         },
 
-        type: {
+        status: {
 
             type: String,
 
             enum: [
 
-                "order",
+                "Pending",
 
-                "delivery",
+                "Accepted",
 
-                "general"
+                "Preparing",
+
+                "Agent Assigned",
+
+                "Picked Up",
+
+                "On The Way",
+
+                "Delivered",
+
+                "Cancelled"
 
             ],
 
-            default: "order"
+            required: true
 
         },
 
@@ -57,16 +76,16 @@ const notificationSchema = new mongoose.Schema(
         }
 
     },
-
     {
 
         timestamps: true
 
     }
-
 );
 
-export default mongoose.model(
+const Notification = mongoose.model(
     "Notification",
     notificationSchema
 );
+
+export default Notification;

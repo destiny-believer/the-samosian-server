@@ -69,7 +69,7 @@ const productSchema = new mongoose.Schema(
       default: 0
     },
 
-    totalRatings: {
+    totalReviews: {
       type: Number,
       default: 0
     },
@@ -78,6 +78,15 @@ const productSchema = new mongoose.Schema(
         customer: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Customer"
+        },
+
+        order: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Order"
+        },
+
+        variantName: {
+          type: String
         },
 
         customerName: {

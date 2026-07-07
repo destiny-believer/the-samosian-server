@@ -661,133 +661,61 @@ export const deliverOrder =
 
     };
 
-export const updateLocation =
-    async (req, res) => {
+export const updateLocation = async (req, res) => {
 
-        console.log(req.body);
-        console.log("UPDATE LOCATION HIT")
+    try {
 
-        try {
+        const { latitude, longitude } = req.body;
 
-            const {
-                latitude,
-                longitude
-            } = req.body || {};
+        const agent = await Agent.findById(req.agent.id);
 
-            console.log(
-                "Location Updated",
-                latitude,
-                longitude
-            )
+        if (!agent) {
 
-            if (
-                latitude === undefined ||
-                longitude === undefined
-            ) {
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Latitude and Longitude are required"
-                });
-            }
+            return res.status(404).json({
 
-            const agent =
-                await Agent.findById(
-                    req.agent.agentId
-                );
+                message: "Agent not found"
 
-            console.log(
-                "Agent Found:",
-                agent?._id
-            );
-
-            if (!agent) {
-                return res.status(404).json({
-                    success: false,
-                    message: "Agent not found"
-                });
-            }
-
-            agent.currentLatitude =
-                latitude;
-
-            agent.currentLongitude =
-                longitude;
-
-            await agent.save();
-
-            const io =
-                getIO();
-
-            const order = await Order.findOne({
-                agent: agent._id,
-                orderStatus: {
-                    $in: ["Agent Assigned", "On The Way"]
-                }
-            });
-
-            console.log(
-                "Order Found:",
-                order?._id
-            )
-
-            console.log(
-                "order status: ", order?.orderStatus
-            )
-
-            if (order) {
-
-                console.log(
-                    "Broadcasting Location",
-                    {
-                        orderId: order._id,
-                        latitude:
-                            agent.currentLatitude,
-                        longitude:
-                            agent.currentLongitude
-                    }
-                );
-
-                console.log(
-                    "Broadcasting Event"
-                );
-
-                io.to(
-                    `order_${order._id}`
-                ).emit(
-                    "agent-location-updated",
-                    {
-                        orderId:
-                            order._id,
-
-                        latitude:
-                            agent.currentLatitude,
-
-                        longitude:
-                            agent.currentLongitude,
-
-                        agentId:
-                            agent._id
-                    }
-                );
-
-            }
-
-            res.status(200).json({
-                success: true,
-                message:
-                    "Location updated"
-            });
-
-        } catch (error) {
-
-            console.log("updated location error: ", error)
-
-            res.status(500).json({
-                success: false,
-                message: error.message
             });
 
         }
 
-    };
+        agent.currentLatitude = latitude;
+
+        agent.currentLongitude = longitude;
+
+        agent.lastLocationUpdated = new Date();
+
+        agent.isOnline = true;
+
+        await agent.save();
+
+        return res.json({
+
+            success: true,
+
+            message: "Location Updated",
+
+            location: {
+
+                latitude,
+
+                longitude
+
+            }
+
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+
+            message: "Server Error"
+
+        });
+
+    }
+
+};
+

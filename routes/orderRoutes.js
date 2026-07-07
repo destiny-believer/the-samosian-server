@@ -10,7 +10,8 @@ import {
     updateOrderStatus,
     assignAgent,
     getLiveLocation,
-    reorderOrder
+    reorderOrder,
+    downloadInvoice
 }
     from "../controllers/order/orderController.js";
 
@@ -82,4 +83,9 @@ router.post(
   reorderOrder
 );
 
+router.get(
+    "/invoice/:orderId",
+    customerMiddleware,
+    downloadInvoice
+);
 export default router;
